@@ -8,6 +8,7 @@ import requests
 from requests.exceptions import HTTPError
 
 from task.models import Profile, Task, User, SerializeError
+from task.views import as_str
 from task.app_logger import get_logger
 
 USERS_URL = "https://jsonplaceholder.typicode.com/users"
@@ -17,10 +18,11 @@ env = environ
 
 logger = get_logger("task")
 
+BASE_DIR = Path(__file__).resolve().parent
+
 if env.get("FOLDER"):
     FOLDER = Path(env["FOLDER"])
 else:
-    BASE_DIR = Path(__file__).resolve().parent
     FOLDER = BASE_DIR.joinpath("tasks2")
 
 
@@ -33,17 +35,22 @@ class Downloader:
         except:
             raise Exception
         for profile in self.profiles:
-            p = self.folder.joinpath(profile.user.username).with_suffix(".txt")
-            if p.exists():
-                date = self._get_date(p)
-                self._rename(p, date)
-            try:
-                with p.open("w", encoding="utf-8") as f:
-                    f.write(str(profile))
-            except EnvironmentError as e:
-                logger.warning(f"""При записи файла {p} произошла ошибка 
-{e}""")
+            self._save(profile)
+            
         logger.info("Конец")
+
+    def _save(self, profile):
+        p = self.folder.joinpath(profile.user.username).with_suffix(".txt")
+        if p.exists():
+            date = self._get_date(p)
+            self._rename(p, date)
+        try:
+            with p.open("w", encoding="utf-8") as f:
+                f.write(as_str(profile))
+        except EnvironmentError as e:
+            logger.warning(f"""При записи файла {p} произошла ошибка 
+{e}""")
+
 
     def _get(self, url):
         logger.info(f"Загрузка {url}")

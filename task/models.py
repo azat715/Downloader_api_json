@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List
 
-nl = "\n"
+
 
 
 class SerializeError(Exception):
@@ -26,8 +26,8 @@ class User:
     company_name: str
     date: datetime = field(init=False)
 
-    def __post_init__(self):
-        self.date = datetime.now().strftime("%d.%m.%y %H:%M")
+    def __post_init__(self) -> datetime:
+        self.date = datetime.now()
 
     @classmethod
     def from_json(cls, obj) -> User:
@@ -84,30 +84,7 @@ class Profile:
     def completed(self) -> List[Task]:
         return [i for i in self.tasks if i.completed is True]
 
-    def tasks_str(self, tasks) -> str:
-        strings = []
-        for task in tasks:
-            strings.append(self.prune(task.title))
-        if len(strings) == 0:
-            return "Нет задач"
-        return nl.join(strings)
-
     @property
     def uncompleted(self) -> List[Task]:
         return [i for i in self.tasks if i.completed is False]
 
-    def prune(self, string):
-        if len(string) > 50:
-            return f"{string[:50]}..."
-        return string
-
-    def __str__(self):
-        return f"""{self.user.name} <{self.user.email}> {self.user.date}
-{self.user.company_name}
-
-Завершённые задачи:
-{self.tasks_str(self.completed)}
-
-Оставшиеся задачи:
-{self.tasks_str(self.uncompleted)}
-"""

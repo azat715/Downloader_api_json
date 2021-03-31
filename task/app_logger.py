@@ -1,10 +1,16 @@
 import logging
+from pathlib import Path
 from logging.handlers import RotatingFileHandler
+
+BASE_DIR = Path(__file__).resolve().parent
+
+LOG_DIR = Path(BASE_DIR / "logs")
+log_file = LOG_DIR.with_name('task_log.log')
 
 _log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
 def get_file_handler():
-    file_handler = RotatingFileHandler('task_log.log', maxBytes=2000, backupCount=10)
+    file_handler = RotatingFileHandler(log_file, maxBytes=2000, backupCount=10)
     file_handler.setLevel(logging.WARNING)
     file_handler.setFormatter(logging.Formatter(_log_format))
     return file_handler
