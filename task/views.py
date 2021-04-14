@@ -1,9 +1,11 @@
 nl = "\n"
 
+
 def prune(string):
-        if len(string) > 50:
-            return f"{string[:50]}..."
-        return string
+    if len(string) > 50:
+        return f"{string[:50]}..."
+    return string
+
 
 def tasks_str(tasks):
     strings = []
@@ -27,5 +29,3 @@ def as_str(profile):
 Оставшиеся задачи:
 {uncompleted}
 """
-
-        

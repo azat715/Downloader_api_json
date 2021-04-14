@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-from collections import UserList
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List
 
 
-
-
 class SerializeError(Exception):
-    def __init__(self, field):
+    def __init__(self, field_):
         super().__init__()
-        self.field = field
+        self.field_ = field_
 
     def __str__(self):
-        return f"""Error отсутствуeт полe: {self.field}"""
+        return f"""Error отсутствуeт полe: {self.field_}"""
 
 
 class ValidateError(Exception):
@@ -24,7 +21,7 @@ class ValidateError(Exception):
         self.task = task
 
     def __str__(self):
-        return f"""Error ошибка валидации: Не соотвествует id пользователя id задачи"""
+        return """Error ошибка валидации: Не соотвествует id пользователя id задачи"""
 
 
 @dataclass
@@ -48,7 +45,7 @@ class User:
             email = obj["email"]
             company_name = obj["company"]["name"]
         except KeyError as e:
-            raise SerializeError(e.args)
+            raise SerializeError(e.args) from e
         else:
             return User(id_, name, username, email, company_name)
 
@@ -73,7 +70,7 @@ class Task:
             title = obj["title"]
             completed = obj["completed"]
         except KeyError as e:
-            raise SerializeError(e.args)
+            raise SerializeError(e.args) from e
         else:
             return Task(user_id, id_, title, completed)
 
@@ -97,7 +94,7 @@ class Profile:
     @property
     def uncompleted(self) -> List[Task]:
         return [i for i in self.tasks if i.completed is False]
-    
+
     def __post_init__(self):
         self._validate()
 
@@ -105,12 +102,11 @@ class Profile:
         for task in self.tasks:
             if task.user_id != self.user.id_:
                 raise ValidateError(self.user, task)
-    
+
     def is_valid(self):
         try:
             self._validate()
-        except ValidateError as e:
+        except ValidateError:
             return False
         else:
             return True
-

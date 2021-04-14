@@ -6,12 +6,14 @@ from unittest.mock import Mock, patch
 import pytest
 
 from task.main import Downloader
-from task.models import Profile, Task, User, SerializeError, ValidateError
+from task.models import Profile, SerializeError, Task, User, ValidateError
 from task.views import as_str
-from .conftest import FIXTURE_DIR, FAKE_TIME, mocked_requests_get
+
+from .conftest import FAKE_TIME, FIXTURE_DIR, mocked_requests_get
 
 USERS_URL = "https://jsonplaceholder.typicode.com/users"
 TASK_URL = "https://jsonplaceholder.typicode.com/todos"
+
 
 def test_profile(users, tasks, patch_datetime_now):
     user = User.from_json(users[0])
@@ -37,24 +39,26 @@ def test_profile(users, tasks, patch_datetime_now):
         task1.user_id = 2
         profile = Profile(user, [task1, task2])
     error_users = users
-    error_users[0]['err'] = error_users[0].pop('name')
+    error_users[0]["err"] = error_users[0].pop("name")
     with pytest.raises(SerializeError):
         user = User.from_json(error_users[0])
 
-@patch('task.main.requests.get', side_effect=mocked_requests_get)
+
+@patch("task.main.requests.get", side_effect=mocked_requests_get)
 def test_one(mock_get, tmp_path, patch_datetime_now, res_file):
     main = Downloader(USERS_URL, TASK_URL, tmp_path)
     assert as_str(main.data[0]) == res_file
 
+
 @pytest.mark.datafiles(FIXTURE_DIR / "Bret.txt")
-@patch('task.main.requests.get', side_effect=mocked_requests_get)
+@patch("task.main.requests.get", side_effect=mocked_requests_get)
 def test_two(patch_datetime_now, datafiles):
     main = Downloader(USERS_URL, TASK_URL, datafiles)
     new_file = Path(datafiles.listdir()[0])
     assert new_file.name == "Bret_2020-12-25T17:05.txt"
 
-@patch('task.main.requests.get', side_effect=mocked_requests_get)
+
+@patch("task.main.requests.get", side_effect=mocked_requests_get)
 def test_error(patch_datetime_now, tmp_path):
     with pytest.raises(Exception):
-        main = Downloader("https://non_valid", TASK_URL, tmp_path)  
-
+        main = Downloader("https://non_valid", TASK_URL, tmp_path)

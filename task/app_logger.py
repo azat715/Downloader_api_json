@@ -1,13 +1,12 @@
 import logging
-from pathlib import Path
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+LOG_DIR = Path("logs")
+log_file = LOG_DIR.with_name("task_log.log")
 
-LOG_DIR = Path(BASE_DIR / "logs")
-log_file = LOG_DIR.with_name('task_log.log')
+_log_format = "%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
-_log_format = f"%(asctime)s - [%(levelname)s] - %(name)s - (%(filename)s).%(funcName)s(%(lineno)d) - %(message)s"
 
 def get_file_handler():
     file_handler = RotatingFileHandler(log_file, maxBytes=2000, backupCount=10)
@@ -15,11 +14,13 @@ def get_file_handler():
     file_handler.setFormatter(logging.Formatter(_log_format))
     return file_handler
 
+
 def get_stream_handler():
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.INFO)
     stream_handler.setFormatter(logging.Formatter(_log_format))
     return stream_handler
+
 
 def get_logger(name):
     logger = logging.getLogger(name)

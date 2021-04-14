@@ -1,6 +1,6 @@
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -11,25 +11,15 @@ FIXTURE_DIR = BASE_DIR.joinpath("test_files")
 
 FAKE_TIME = datetime(2020, 12, 25, 17, 5, 55)
 
+
 @pytest.fixture
 def patch_datetime_now(monkeypatch):
-
     class mydatetime:
         @classmethod
         def now(cls):
             return FAKE_TIME
 
-    monkeypatch.setattr('task.models.datetime', mydatetime)
-
-@pytest.fixture
-def patch_datetime_now_future(monkeypatch):
-
-    class mydatetime:
-        @classmethod
-        def now(cls):
-            return FAKE_TIME + timedelta(hours=1)
-
-    monkeypatch.setattr('task.models.datetime', mydatetime)
+    monkeypatch.setattr("task.models.datetime", mydatetime)
 
 
 @pytest.fixture()
@@ -38,6 +28,7 @@ def setup_folder(monkeypatch, tmpdir_factory):
     monkeypatch.setenv("FOLDER", str(temp_dir))
     yield
     monkeypatch.delenv("FOLDER")
+
 
 USERS_JSON = """
 [
@@ -67,7 +58,7 @@ USERS_JSON = """
 ]
 """
 
-TASKS_JSON =  """
+TASKS_JSON = """
 [
     {
         "userId": 1,
@@ -96,22 +87,20 @@ TASKS_JSON =  """
 ]
 """
 
+
 @pytest.fixture()
 def users():
-    return json.loads(
-      USERS_JSON
-    )
+    return json.loads(USERS_JSON)
 
 
 @pytest.fixture()
 def tasks():
-    return json.loads(
-       TASKS_JSON
-    )
+    return json.loads(TASKS_JSON)
+
 
 @pytest.fixture()
 def res_file():
-  return f"""Leanne Graham <Sincere@april.biz> 25.12.20 17:05
+    return """Leanne Graham <Sincere@april.biz> 25.12.20 17:05
 Romaguera-Crona
 
 Завершённые задачи:
@@ -122,6 +111,7 @@ delectus aut autem
 quis ut nam facilis et officia qui
 fugiat veniam minus
 """
+
 
 def mocked_requests_get(*args, **kwargs):
     class MockResponse:
@@ -136,17 +126,14 @@ def mocked_requests_get(*args, **kwargs):
             pass
 
     if args[0] == "https://jsonplaceholder.typicode.com/users":
-        return MockResponse(json.loads(
-          USERS_JSON
-    ), 200)
+        return MockResponse(json.loads(USERS_JSON), 200)
     elif args[0] == "https://jsonplaceholder.typicode.com/todos":
-         return MockResponse(json.loads(
-             TASKS_JSON
-    ), 200)
+        return MockResponse(json.loads(TASKS_JSON), 200)
 
     elif args[0] == "https://non_valid":
-        return MockResponse(json.loads(
-        """
+        return MockResponse(
+            json.loads(
+                """
     [
       {
         "id": 1,
@@ -173,6 +160,8 @@ def mocked_requests_get(*args, **kwargs):
       }
     ]
     """
-    ), 200)
-    
+            ),
+            200,
+        )
+
     return MockResponse(None, 404)
