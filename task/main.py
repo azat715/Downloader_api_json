@@ -25,73 +25,64 @@ if env.get("FOLDER"):
 else:
     FOLDER = BASE_DIR.joinpath("tasks2")
 
+class Base:
+    def __init__(self):
+        self.data = []
 
-class Downloader:
-    def __init__(self, user_url, task_url, folder):
-        self.folder = Path(folder)
-        self._create_folder()
-        try:
-            self.profiles = self._get_profiles(user_url, task_url)
-        except:
-            raise Exception
-        for profile in self.profiles:
-            self._save(profile)
-            
-        logger.info("Конец")
-
-    def _save(self, profile):
-        p = self.folder.joinpath(profile.user.username).with_suffix(".txt")
-        if p.exists():
-            date = self._get_date(p)
-            self._rename(p, date)
-        try:
-            with p.open("w", encoding="utf-8") as f:
-                f.write(as_str(profile))
-        except EnvironmentError as e:
-            logger.warning(f"""При записи файла {p} произошла ошибка 
-{e}""")
-
-
-    def _get(self, url):
+    def get(self, url, model):
         logger.info(f"Загрузка {url}")
         try:
             r = requests.get(url)
             r.raise_for_status()
-            res = r.json()
+            res = [model.from_json(i) for i in r.json()]
         except HTTPError as e:
             logger.warning(f"""При обработке URL {url} произошла ошибка 
 {e}""")
         except JSONDecodeError as e:
             logger.warning(f"""При обработке URL {url} произошла ошибка 
 {e}""")
+        except SerializeError as e:
+            logger.warning(f"""При обработке URL {url} произошла ошибка 
+{e}""")
         else:
             return res
 
-    def _users(self, url):
-        obj = self._get(url)
-        return [User.from_json(i) for i in obj]
-
-    def _tasks(self, url):
-        obj = self._get(url)
-        return [Task.from_json(i) for i in obj]
-
-    def _get_profiles(self, user_url, task_url):
-        profiles = []
+    def save_item(self, item, path):
         try:
-            users = self._users(user_url)
-        except SerializeError as e:
-            logger.warning(f"""При обработке URL {user_url} произошла ошибка 
+            with path.open("w", encoding="utf-8") as f:
+                f.write(as_str(item))
+        except EnvironmentError as e:
+            logger.warning(f"""При записи файла {p} произошла ошибка 
 {e}""")
+
+
+class Downloader(Base):
+    def __init__(self, user_url, task_url, folder):
+        super().__init__()
+        self.folder = Path(folder)
+        self._create_folder()
         try:
-            tasks = self._tasks(task_url)
-        except SerializeError as e:
-            logger.warning(f"""При обработке URL {task_url} произошла ошибка 
-{e}""")
+            self.get_data(user_url, task_url)
+            for profile in self.data:
+                self.save(profile)
+        except:
+            raise Exception
+
+    def save(self, profile):
+        p = self.folder.joinpath(profile.user.username).with_suffix(".txt")
+        if p.exists():
+            date = self._get_date(p)
+            self._rename(p, date)
+        self.save_item(profile, p)
+   
+
+    def get_data(self, user_url, task_url):
+        users = self.get(user_url, User)
+        tasks = self.get(task_url, Task)
         for user in users:
-            profiles.append(
+            self.data.append(
                 Profile(user, [task for task in tasks if task.user_id == user.id_])
             )
-        return profiles
 
     def _create_folder(self):
         try:
