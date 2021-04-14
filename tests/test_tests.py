@@ -6,14 +6,14 @@ from unittest.mock import Mock, patch
 import pytest
 
 from task.main import Downloader
-from task.models import Profile, Task, User, SerializeError
+from task.models import Profile, Task, User, SerializeError, ValidateError
 from task.views import as_str
 from .conftest import FIXTURE_DIR, FAKE_TIME, mocked_requests_get
 
 USERS_URL = "https://jsonplaceholder.typicode.com/users"
 TASK_URL = "https://jsonplaceholder.typicode.com/todos"
 
-def test_user(users, patch_datetime_now):
+def test_profile(users, tasks, patch_datetime_now):
     user = User.from_json(users[0])
     assert user.id_ == 1
     assert user.name == "Leanne Graham"
@@ -21,14 +21,25 @@ def test_user(users, patch_datetime_now):
     assert user.email == "Sincere@april.biz"
     assert user.company_name == "Romaguera-Crona"
     assert user.date == FAKE_TIME
-    
-
-def test_task(tasks):
-    task = Task.from_json(tasks[0])
-    assert task.user_id == 1
-    assert task.id_ == 1
-    assert task.title == "delectus aut autem"
-    assert task.completed == False
+    task1 = Task.from_json(tasks[0])
+    assert task1.user_id == 1
+    assert task1.id_ == 1
+    assert task1.title == "delectus aut autem"
+    assert task1.completed == False
+    task2 = Task.from_json(tasks[3])
+    profile = Profile(user, [task1, task2])
+    print(profile.uncompleted)
+    uncompleted = len(profile.uncompleted)
+    assert uncompleted == 1
+    completed = len(profile.completed)
+    assert completed == 1
+    with pytest.raises(ValidateError):
+        task1.user_id = 2
+        profile = Profile(user, [task1, task2])
+    error_users = users
+    error_users[0]['err'] = error_users[0].pop('name')
+    with pytest.raises(SerializeError):
+        user = User.from_json(error_users[0])
 
 @patch('task.main.requests.get', side_effect=mocked_requests_get)
 def test_one(mock_get, tmp_path, patch_datetime_now, res_file):

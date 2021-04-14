@@ -17,6 +17,16 @@ class SerializeError(Exception):
         return f"""Error отсутствуeт полe: {self.field}"""
 
 
+class ValidateError(Exception):
+    def __init__(self, user, task):
+        super().__init__()
+        self.user = user
+        self.task = task
+
+    def __str__(self):
+        return f"""Error ошибка валидации: Не соотвествует id пользователя id задачи"""
+
+
 @dataclass
 class User:
     id_: int
@@ -87,4 +97,20 @@ class Profile:
     @property
     def uncompleted(self) -> List[Task]:
         return [i for i in self.tasks if i.completed is False]
+    
+    def __post_init__(self):
+        self._validate()
+
+    def _validate(self):
+        for task in self.tasks:
+            if task.user_id != self.user.id_:
+                raise ValidateError(self.user, task)
+    
+    def is_valid(self):
+        try:
+            self._validate()
+        except ValidateError as e:
+            return False
+        else:
+            return True
 
