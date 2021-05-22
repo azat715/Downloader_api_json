@@ -17,15 +17,13 @@ env = environ
 
 logger = get_logger("task")
 
-if env.get("FOLDER"):
-    FOLDER = Path(env["FOLDER"])
-else:
-    FOLDER = Path("tasks2")
+FOLDER = Path("tasks2")
 
-
-class Base:
-    def __init__(self):
+class Downloader():
+    def __init__(self, folder):
         self.data = []
+        self.folder = Path(folder)
+        self._create_folder()
 
     def get(self, url, model):
         logger.info("Загрузка %s", url)
@@ -33,43 +31,34 @@ class Base:
             r = requests.get(url)
             r.raise_for_status()
             res = [model.from_json(i) for i in r.json()]
-        except HTTPError as e:
+        except (JSONDecodeError, SerializeError, HTTPError) as e:
             logger.warning("При обработке URL %s произошла ошибка \n %s", url, e)
-        except (JSONDecodeError, SerializeError) as e:
-            logger.warning("При обработке URL %s произошла ошибка \n %s", url, e)
+            raise Exception from e
         else:
             return res
 
-    def save_item(self, item, path):
-        try:
-            with path.open("w", encoding="utf-8") as f:
-                f.write(as_str(item))
-        except EnvironmentError as e:
-            logger.warning("При записи файла %s произошла ошибка \n %s", path, e)
+    def save(self):
+        for profile in self.data:
+            try:
+                p = self.folder.joinpath(profile.user.username).with_suffix(".txt")
+                if p.exists():
+                    date = self._get_date(p)
+                    self._rename(p, date)
+                with p.open("w", encoding="utf-8") as f:
+                    f.write(as_str(profile))
+            except EnvironmentError as e:
+                logger.warning("При записи файла %s произошла ошибка \n %s", p, e)
 
+    
+    def users(self, url, model):
+        return self.get(url, model)
 
-class Downloader(Base):
-    def __init__(self, user_url, task_url, folder):
-        super().__init__()
-        self.folder = Path(folder)
-        self._create_folder()
-        try:
-            self.get_data(user_url, task_url)
-            for profile in self.data:
-                self.save(profile)
-        except Exception as e:
-            raise Exception from e
-
-    def save(self, profile):
-        p = self.folder.joinpath(profile.user.username).with_suffix(".txt")
-        if p.exists():
-            date = self._get_date(p)
-            self._rename(p, date)
-        self.save_item(profile, p)
+    def tasks(self, url, model):
+        return self.get(url, model)
 
     def get_data(self, user_url, task_url):
-        users = self.get(user_url, User)
-        tasks = self.get(task_url, Task)
+        users = self.users(user_url, User)
+        tasks = self.tasks(task_url, Task)
         for user in users:
             self.data.append(
                 Profile(user, [task for task in tasks if task.user_id == user.id_])
@@ -99,4 +88,6 @@ class Downloader(Base):
 
 def cli():
     logger.info("Запуск")
-    Downloader(USERS_URL, TASK_URL, FOLDER)
+    main = Downloader(FOLDER)
+    main.get_data(USERS_URL, TASK_URL)
+    main.save()

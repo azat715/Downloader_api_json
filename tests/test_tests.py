@@ -46,14 +46,17 @@ def test_profile(users, tasks, patch_datetime_now):
 
 @patch("task.main.requests.get", side_effect=mocked_requests_get)
 def test_one(mock_get, tmp_path, patch_datetime_now, res_file):
-    main = Downloader(USERS_URL, TASK_URL, tmp_path)
+    main = Downloader(tmp_path)
+    main.get_data(USERS_URL, TASK_URL)
     assert as_str(main.data[0]) == res_file
 
 
 @pytest.mark.datafiles(FIXTURE_DIR / "Bret.txt")
 @patch("task.main.requests.get", side_effect=mocked_requests_get)
 def test_two(patch_datetime_now, datafiles):
-    main = Downloader(USERS_URL, TASK_URL, datafiles)
+    main = Downloader(datafiles)
+    main.get_data(USERS_URL, TASK_URL)
+    main.save()
     new_file = Path(datafiles.listdir()[0])
     assert new_file.name == "Bret_2020-12-25T17:05.txt"
 
@@ -61,4 +64,5 @@ def test_two(patch_datetime_now, datafiles):
 @patch("task.main.requests.get", side_effect=mocked_requests_get)
 def test_error(patch_datetime_now, tmp_path):
     with pytest.raises(Exception):
-        main = Downloader("https://non_valid", TASK_URL, tmp_path)
+        main = Downloader(tmp_path)
+        main.get_data("https://non_valid", TASK_URL)
